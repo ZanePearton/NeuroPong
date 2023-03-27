@@ -25,6 +25,17 @@ const batchSize = 64;
 const discountFactor = 0.99;
 
 /// SRART tensorflow training-------------------------------------
+
+//Implement the training loop: ncludes a ReplayMemory class to store and sample experience
+// This code implements the training loop for the Pong agent using the DQN
+// algorithm. It includes a ReplayMemory class to store and sample experiences, 
+// as well as functions for choosing and performing actions based on the current 
+// state of the game.
+// The trainAgent function runs the game using the current model, stores the 
+// game states, actions, and rewards in memory, and updates the model using 
+// the DQN algorithm based on the stored data.
+
+//Create the neural network model:
 function createModel() {
     const model = tf.sequential();
     model.add(tf.layers.dense({ units: 64, activation: 'relu', inputShape: [8] }));
@@ -36,7 +47,7 @@ function createModel() {
     });
     return model;
 }
-
+//Preprocess game state data:
 function preprocessState(state) {
     return [
         state.leftPaddleY / canvas.height,
@@ -49,7 +60,7 @@ function preprocessState(state) {
         state.rightScore / 20
     ];
 }
-
+//Define the reward function:
 function getReward(state, action, nextState) {
     if (nextState.leftScore > state.leftScore) {
         return 1;
@@ -60,6 +71,7 @@ function getReward(state, action, nextState) {
     }
 }
 
+// Implement the training loop:
 async function trainModel(model, memory, batchSize) {
     const batch = memory.sample(batchSize);
     const states = batch.map(entry => entry.state);
