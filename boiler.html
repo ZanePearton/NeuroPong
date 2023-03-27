@@ -50,7 +50,14 @@
         let ballY = canvas.height / 2;
         let ballSpeedX = 4;
         let ballSpeedY = 4;
+        let trainingStep = 0;
+        const trainInterval = 100;
+        const saveModelInterval = 5000;
+        const bufferSize = 10000;
+        const batchSize = 64;
+        const discountFactor = 0.99;
 
+        
         function drawRect(x, y, width, height, color) {
             ctx.fillStyle = color;
             ctx.fillRect(x, y, width, height);
@@ -101,10 +108,43 @@
             return model;
         }
 
+        async function trainDQNModel(replayBuffer, dqnModel, batchSize, discountFactor) {
+            const samples = replayBuffer.sample(batchSize);
+            const states = samples.map(sample => sample.state);
+            const actions = samples.map(sample => sample.action);
+            const rewards = samples.map(sample => sample.reward);
+            const nextStates = samples.map(sample => sample.nextState);
+            const statesTensor = tf.tensor2d(states);
+            const actionsTensor = tf.tensor1d(actions, 'int32');
+            const rewardsTensor = tf.tensor1d(rewards);
+            const nextStatesTensor = tf.tensor2d(nextStates);
+            const actionMask = tf.oneHot(actionsTensor, outputSize);
+            const currentQValues = dqnModel.predict(statesTensor).mul(actionMask).sum(-1);
+            const nextQValues = dqnModel.predict(nextStatesTensor).max(-1);
+            const targetQValues = rewardsTensor.add(nextQValues.mul(discountFactor));
+            const y = currentQValues.clone();
+            const mask = tf.oneHot(actionsTensor, outputSize);
+            y.sub(targetQValues).mul(mask).mul(-1);
+            dqnModel.fit(statesTensor, y, {
+                batchSize: batchSize,
+                epochs: 1,
+                verbose: 0,
+            });
+            actionMask.dispose();
+            statesTensor.dispose();
+            actionsTensor.dispose();
+            rewardsTensor.dispose();
+            nextStatesTensor.dispose();
+            y.dispose();
+            mask.dispose();
+            currentQValues.dispose();
+            nextQValues.dispose();
+            targetQValues.dispose();
+            return history;
+        }
         const inputSize = 6; // [leftPaddleY, rightPaddleY, ballX, ballY, ballSpeedX, ballSpeedY]
         const outputSize = 3; // [-paddleSpeed, 0, paddleSpeed]
         const dqnModel = createDQNModel(inputSize, outputSize);
-
         function displayWinner(winner) {
             const h3 = document.createElement('h3');
             h3.textContent = `${winner} wins!`;
@@ -121,7 +161,6 @@
         function updateBall() {
             ballX += ballSpeedX;
             ballY += ballSpeedY;
-
             if (ballY < 0 || ballY > canvas.height) {
                 ballSpeedY = -ballSpeedY;
             }
@@ -151,40 +190,61 @@
             }
 
         }
-
         async function moveDQN_AI(paddleY, ballY, isLeftPaddle) {
             const input = tf.tensor2d([[isLeftPaddle ? 1 : 0, paddleY, ballY, ballX, ballSpeedX, ballSpeedY]]);
             const prediction = dqnModel.predict(input);
             const actionIndex = (await prediction.argMax(-1).data())[0];
             prediction.dispose();
             input.dispose();
-            console.log(input);
-
+            const oldPaddleY = paddleY;
             if (actionIndex === 0) {
                 paddleY -= paddleSpeed;
             } else if (actionIndex === 2) {
                 paddleY += paddleSpeed;
             }
-
             // Make sure the paddle stays within the canvas height bounds
             if (paddleY < 0) {
                 paddleY = 0;
             } else if (paddleY > canvas.height - paddleHeight) {
                 paddleY = canvas.height - paddleHeight;
             }
-
+            // Store the experience in the replay buffer
+            const state = [isLeftPaddle ? 1 : 0, oldPaddleY, ballY, ballX, ballSpeedX, ballSpeedY];
+            const nextState = [isLeftPaddle ? 1 : 0, paddleY, ballY, ballX, ballSpeedX, ballSpeedY];
+            const reward = paddleY === oldPaddleY ? -1 : 1;
+            replayBuffer.addExperience({ state, action: actionIndex, reward, nextState });
             return paddleY;
         }
 
+        const replayBuffer = createReplayBuffer(bufferSize);
+        function createReplayBuffer(bufferSize) {
+            const buffer = [];
+            function addExperience(experience) {
+                if (buffer.length >= bufferSize) {
+                    buffer.shift();
+                }
+                buffer.push(experience);
+            }
+            function sample(batchSize) {
+                if (buffer.length < batchSize) {
+                    return [];
+                }
+                const randomIndices = [];
+                for (let i = 0; i < batchSize; i++) {
+                    randomIndices.push(Math.floor(Math.random() * buffer.length));
+                }
+                return randomIndices.map(index => buffer[index]);
+            }
+
+            return {
+                addExperience,
+                sample
+            };
+        }
         async function movePaddles() {
             leftPaddleY = await moveDQN_AI(leftPaddleY, ballY, true);
             rightPaddleY = await moveDQN_AI(rightPaddleY, ballY, false);
         }
-
-        // async function movePaddles() {
-        //     leftPaddleY = await moveAI(leftPaddleY, ballY, true);
-        //     rightPaddleY = await moveAI(rightPaddleY, ballY, false);
-        // }
 
         async function gameLoop() {
             if (gameOver) {
@@ -197,23 +257,21 @@
             drawRect(canvas.width - paddleWidth, rightPaddleY, paddleWidth, paddleHeight, 'white');
             drawBall(ballX, ballY, ballSize, 'white');
             drawScore();
+            // Train the model
+            if (trainingStep % trainInterval === 0) {
+                await trainDQNModel(replayBuffer, dqnModel, batchSize, discountFactor);
+            }
+            // Save the model
+            if (trainingStep % saveModelInterval === 0) {
+                await saveModel(dqnModel, 'pong_dqn_model');
+            }
+            trainingStep++;
             requestAnimationFrame(gameLoop);
         }
 
-        // function moveAI(paddleY, ballY) {
-        //     const paddleCenter = paddleY + paddleHeight / 2;
-
-        //     if (paddleCenter < ballY - 35) {
-        //         paddleY += paddleSpeed;
-        //     } else if (paddleCenter > ballY + 35) {
-        //         paddleY -= paddleSpeed;
-        //     }
-
-        //     return paddleY;
-        // }
-
-
         gameLoop();
+
+
     </script>
 </body>
 
