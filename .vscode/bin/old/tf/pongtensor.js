@@ -280,12 +280,33 @@ AI.prototype.reset = function(){
 }
 
 
+
+// Define a method called "train" for the AI class
+// Print "balancing" to the console
+// Calculate the minimum length of the three training data arrays
+// Check if the minimum length is zero (i.e., no training data)
+// a. If true, print "nothing to train" to the console and return
+// Initialize empty arrays for data_xs and data_ys
+// Loop through the training data arrays (i = 0 to 2)
+// a. Append the first "len" elements of the i-th training data array to data_xs
+// b. Append an array of length "len" containing one-hot encoded class labels to data_ys
+// Print "training" to the console
+// Convert data_xs and data_ys to TensorFlow tensors (xs and ys)
+// Define an asynchronous function to train the model with the following steps:
+// a. Print "training2" to the console
+// b. Fit the model using xs and
+
+
 // Custom code:
 // trains a model
 AI.prototype.train = function(){
     console.log('balancing');
 
     //shuffle attempt
+    // Calculate the minimum length of the three training data arrays
+    // Check if the minimum length is zero (i.e., no elements added to any of the arrays)
+    // a. If true (minimum length is zero), print "nothing to train" to the console
+    // b. Return, which stops the execution of the function and does nothing further
     len = Math.min(this.training_data[0].length, this.training_data[1].length, this.training_data[2].length);
     if(!len){
         console.log('nothing to train');
@@ -297,7 +318,6 @@ AI.prototype.train = function(){
         data_xs.push(...this.training_data[i].slice(0, len));
         data_ys.push(...Array(len).fill([i==0?1:0, i==1?1:0, i==2?1:0]));
     }
-
 
     console.log('training');
     var xs = tf.tensor(data_xs);

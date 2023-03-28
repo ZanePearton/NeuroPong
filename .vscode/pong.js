@@ -1,3 +1,25 @@
+///Model
+
+// TF NN - Initialize a new neural network model
+var model = tf.sequential();
+//add dense layer 256 units X input 8 
+model.add(tf.layers.dense({units: 256, inputShape: [8]})); 
+//add dense layer 512 units X input 8 activation function sigmoid
+model.add(tf.layers.dense({units: 512, inputShape: [256], activation:"sigmoid"}));
+//add dense layer 256 units X input 8 activation function sigmoid
+model.add(tf.layers.dense({units: 256, inputShape: [512], activation:"sigmoid"}));
+//add dense layer 512 units X input 8 activation function sigmoid
+model.add(tf.layers.dense({units: 3, inputShape: [256]})); //returns a 1x3
+var learningRate = 0.001;
+//Initialize the optimizer as Adam with the given learning rate
+var optimizer = tf.train.adam(learningRate);
+//compile
+model.compile({loss: 'meanSquaredError', optimizer: optimizer});
+
+
+
+
+//globals
 const paddleWidth = 10;
 const paddleHeight = 100;
 const paddleSpeed = 5;
@@ -15,13 +37,13 @@ let ballY = canvas.height / 2;
 let ballSpeedX = 14;
 let ballSpeedY = 14;
 
-// const color = '#39ff14';
 
+//Draw Rectangle
 function drawRect(x, y, width, height, color) {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, width, height);
 }
-
+//Draw Ball 
 function drawBall(x, y, size, color) {
     ctx.fillStyle = color;
     ctx.beginPath();
@@ -37,6 +59,7 @@ function moveLeftPaddleAI() {
         leftPaddleY -= paddleSpeed;
     }
 }
+
 
 function moveRightPaddleAI() {
     const paddleCenter = rightPaddleY + paddleHeight / 2;
@@ -72,7 +95,6 @@ function renderWinner(winner) {
 function updateBall() {
     ballX += ballSpeedX;
     ballY += ballSpeedY;
-
     if (ballY < 0 || ballY > canvas.height) {
         ballSpeedY = -ballSpeedY;
     }
