@@ -15,6 +15,8 @@ let ballY = canvas.height / 2;
 let ballSpeedX = 14;
 let ballSpeedY = 14;
 
+// const color = '#39ff14';
+
 function drawRect(x, y, width, height, color) {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, width, height);
@@ -29,7 +31,6 @@ function drawBall(x, y, size, color) {
 
 function moveLeftPaddleAI() {
     const paddleCenter = leftPaddleY + paddleHeight / 2;
-
     if (paddleCenter < ballY - 35) {
         leftPaddleY += paddleSpeed;
     } else if (paddleCenter > ballY + 35) {
@@ -38,7 +39,6 @@ function moveLeftPaddleAI() {
 }
 
 function moveRightPaddleAI() {
-
     const paddleCenter = rightPaddleY + paddleHeight / 2;
     if (paddleCenter < ballY - 35) {
         rightPaddleY += paddleSpeed;
@@ -48,27 +48,27 @@ function moveRightPaddleAI() {
 }
 
 function drawScore() {
-    ctx.font = '48px monospace';
-    ctx.fillStyle = 'white';
+    ctx.font = '48px Terminal, sans-serif';
+    ctx.fillStyle = '#39ff14';
     ctx.textAlign = 'center';
     ctx.fillText(leftScore, canvas.width / 4, 50);
     ctx.fillText(rightScore, (canvas.width / 4) * 3, 50);
 }
 
-function displayWinner(winner) {
-    ctx.font = '48px monospace';
-    const h3 = document.createElement('h3');
-    h3.textContent = `${winner} WINS`;
-    h3.style.position = 'absolute';
-    h3.style.left = '50%';
-    h3.style.top = '50%';
-    h3.style.transform = 'translate(-50%, -50%)';
-    h3.style.color = 'pink';
-    h3.style.font = '48px monospace';
-    h3.style.textAlign = 'center';
+function renderWinner(winner) {
+    const h2 = document.createElement('h2');
+    ctx.font = '48px Terminal, sans-serif';
+    h2.textContent = `${winner} WINS!`;
+    h2.style.position = 'absolute';
+    h2.style.left = '50%';
+    h2.style.top = '50%';
+    h2.style.transform = 'translate(-50%, -10%)';
+    h2.style.color = '#39ff14';
+    h2.style.textAlign = 'center';
     const gameContainer = document.getElementById('gameContainer');
-    gameContainer.appendChild(h3);
+    gameContainer.appendChild(h2);
 }
+
 function updateBall() {
     ballX += ballSpeedX;
     ballY += ballSpeedY;
@@ -98,7 +98,7 @@ function updateBall() {
     if (leftScore >= 3 || rightScore >= 3) {
         gameOver = true;
         const winner = leftScore >= 3 ? 'LEFT ' : 'RIGHT ';
-        displayWinner(winner);
+        renderWinner(winner);
     }
 
 }
@@ -110,9 +110,9 @@ function gameLoop() {
     drawRect(0, 0, canvas.width, canvas.height, 'black');
     movePaddles();
     updateBall();
-    drawRect(0, leftPaddleY, paddleWidth, paddleHeight, 'white');
-    drawRect(canvas.width - paddleWidth, rightPaddleY, paddleWidth, paddleHeight, 'white');
-    drawBall(ballX, ballY, ballSize, 'white');
+    drawRect(0, leftPaddleY, paddleWidth, paddleHeight, '#39ff14');
+    drawRect(canvas.width - paddleWidth, rightPaddleY, paddleWidth, paddleHeight, '#39ff14');
+    drawBall(ballX, ballY, ballSize, '#39ff14');
     drawScore();
     requestAnimationFrame(gameLoop);
 }

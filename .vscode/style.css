@@ -1,5 +1,6 @@
 body {
     background-color: black;
+    font-family: 'Terminal', sans-serif;
     margin: 0;
     height: 100vh;
     display: flex;
@@ -7,13 +8,17 @@ body {
     align-items: center;
 }
 
+
+
 #gameContainer {
+    font-family: 'Terminal', sans-serif;
     position: relative;
     width: 640px;
     height: 480px;
 }
 
 canvas {
+    font-family: 'Terminal', sans-serif;
     display: block;
     background-color: rgb(0, 0, 0);
 }
